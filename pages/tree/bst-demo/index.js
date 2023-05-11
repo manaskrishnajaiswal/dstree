@@ -3,7 +3,7 @@ import * as go from "gojs";
 import Loader from "@/frontend/components/Loader";
 import Head from "next/head";
 import BST from "./main";
-const bst = new BST();
+let bst = new BST();
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 const colors = {
@@ -214,91 +214,80 @@ const ChatgptMindmap = () => {
     };
   }, []);
 
-  // const convertToTreeNodes = async (data, parent = "R1") => {
-  //   var nodes = [];
-  //   var nodeCount = 1;
-  //   var nodeDataCount = 1;
-  //   for (let key in data) {
-  //     let value = data[key];
-  //     if (
-  //       (typeof value === "string" && value.length !== 0) ||
-  //       typeof value === "number"
-  //     ) {
-  //       let node = {
-  //         key: parent + "N" + nodeCount + "D" + nodeDataCount,
-  //         parent: parent,
-  //         text: key,
-  //         color:
-  //           colors[
-  //             Object.keys(colors)[
-  //               Math.floor(Math.random() * Object.keys(colors).length)
-  //             ]
-  //           ],
-  //       };
-  //       let childNode = {
-  //         key: parent + "N" + nodeCount + "D" + nodeDataCount + "CS",
-  //         parent: parent + "N" + nodeCount + "D" + nodeDataCount,
-  //         text: value,
-  //         color:
-  //           colors[
-  //             Object.keys(colors)[
-  //               Math.floor(Math.random() * Object.keys(colors).length)
-  //             ]
-  //           ],
-  //       };
-  //       nodes.push(node);
-  //       nodes.push(childNode);
-  //     }
-  //     if (typeof value === "object") {
-  //       let node = {
-  //         key: parent + "N" + nodeCount + "D" + nodeDataCount,
-  //         parent: parent,
-  //         text: typeof value === "object" ? key : value,
-  //         color:
-  //           colors[
-  //             Object.keys(colors)[
-  //               Math.floor(Math.random() * Object.keys(colors).length)
-  //             ]
-  //           ],
-  //       };
-  //       nodes.push(node);
-  //       let children = convertToTreeNodes(
-  //         value,
-  //         parent + "N" + nodeCount + "D" + nodeDataCount
-  //       );
-  //       if (children.length !== 0) {
-  //         nodes.push(...children);
-  //       }
-  //     }
-  //     // console.log("For Loop - ", nodes)
-  //     nodeDataCount++;
-  //   }
-  //   nodeCount++;
-  //   //   console.log("Main - nodes", nodes)
-  //   //   console.log("Main - dataArr", dataArr)
-  //   return nodes;
-  // };
+  // Perform breadth-first traversal of the tree
+  function dataTOTreeNodeConversion(tree, nodevalue) {
+    const queue = [];
+    const result = [];
+    let plcrcArr = [];
+    let p, lc, rc;
+    if (tree.root) {
+      queue.push(tree.root);
+      while (queue.length > 0) {
+        const current = queue.shift();
+        p = current.value;
+        let node = {};
+        if (current.value === tree.root.value) {
+          node = {
+            key: current.value,
+            text: current.value,
+            color:
+              colors[
+                Object.keys(colors)[
+                  Math.floor(Math.random() * Object.keys(colors).length)
+                ]
+              ],
+          };
+        } else {
+          const foundNode = plcrcArr.find((n) => n.lc === p || n.rc === p);
+          const foundResult = foundNode ? foundNode.p : null;
+          console.log(p, foundResult);
+          node = {
+            key: current.value,
+            parent: foundResult,
+            text: current.value,
+            color:
+              colors[
+                Object.keys(colors)[
+                  Math.floor(Math.random() * Object.keys(colors).length)
+                ]
+              ],
+          };
+        }
+        if (p == nodevalue) {
+          result.push(node);
+          return result;
+        }
+        if (current.left) {
+          lc = current.left.value;
+          queue.push(current.left);
+        }
+        if (current.right) {
+          rc = current.right.value;
+          queue.push(current.right);
+        }
+        plcrcArr.push({ p: p, lc: lc, rc: rc });
+        console.log(plcrcArr);
+        p = null;
+        lc = null;
+        rc = null;
+      }
+    }
+    return result;
+  }
 
   const promptHandleSubmit = async (event) => {
     event.preventDefault();
     if (nodeDataArray.length === 0) {
       bst.insert(Number(prompt));
-      setNodeDataArray([
-        {
-          key: "R1",
-          text: prompt,
-          color:
-            colors[
-              Object.keys(colors)[
-                Math.floor(Math.random() * Object.keys(colors).length)
-              ]
-            ],
-          figure: "Circle",
-        },
-      ]);
+      const treeNodeArr = dataTOTreeNodeConversion(bst, Number(prompt));
+      console.log(treeNodeArr);
+      setNodeDataArray([...nodeDataArray, ...treeNodeArr]);
       setPrompt("");
     } else {
       bst.insert(Number(prompt));
+      const treeNodeArr = dataTOTreeNodeConversion(bst, Number(prompt));
+      console.log(treeNodeArr);
+      setNodeDataArray([...nodeDataArray, ...treeNodeArr]);
       setPrompt("");
     }
   };
@@ -310,6 +299,7 @@ const ChatgptMindmap = () => {
     setNodeData([]);
     setNodeDataArray([]);
     setSelectedNodeKey("");
+    bst = new BST();
   };
 
   // Toggle full screen on button click
